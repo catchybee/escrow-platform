@@ -1,10 +1,8 @@
-import { AuthConfig } from "convex/server";
-
 export default {
   providers: [
     {
-      domain: process.env.CONVEX_SITE_URL!,
+      domain: "https://elegant-mule-505.convex.site",
       applicationID: "convex",
     },
   ],
-} satisfies AuthConfig;
+};
