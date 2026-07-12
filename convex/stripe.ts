@@ -4,7 +4,7 @@ import { v } from "convex/values";
 // 1. THIS PREPARES A 25% PHASE DEPOSIT
 export const fundPhase = action({
   args: { projectId: v.id("projects"), totalBudget: v.number() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     // Import dynamically ONLY when the function runs
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
