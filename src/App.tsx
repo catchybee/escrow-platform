@@ -10,7 +10,7 @@ const LoginPage = () => {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState(""); // Adds visual feedback
+  const [status, setStatus] = useState(""); 
 
   const handleAuth = async (flow: "signIn" | "signUp") => {
     try {
@@ -21,17 +21,18 @@ const LoginPage = () => {
       
       setStatus("Success! Loading Dashboard...");
       
-      // 2. THE HACKATHON HAMMER:
-      // Wait exactly 1 second for the token to securely save to the browser's storage,
-      // then force a hard navigation directly to the dashboard.
+      // 2. THE DEMO BYPASS: Plant a rock-solid flag in the browser
+      localStorage.setItem("hackathon_demo_auth", "true");
+      
+      // 3. Navigate immediately
       setTimeout(() => {
         window.location.href = "/create";
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
       setStatus("");
       console.error("Auth failed:", error);
-      alert("Authentication failed. Check console for details.");
+      alert("Authentication failed. Please check your credentials.");
     }
   };
 
@@ -53,7 +54,6 @@ const LoginPage = () => {
           style={{ display: "block", marginBottom: "20px", padding: "15px", borderRadius: "8px", width: "100%", boxSizing: "border-box", color: "black", border: "1px solid #ccc", fontSize: "16px" }} 
         />
         
-        {/* Shows you exactly what is happening in real-time */}
         {status && <p style={{ color: "#27ae60", fontWeight: "bold", marginBottom: "15px" }}>{status}</p>}
 
         <div style={{ display: "flex", gap: "15px" }}>
@@ -65,14 +65,28 @@ const LoginPage = () => {
   );
 };
 
+// 🛡️ UPDATED: Now checks our local storage flag so it never kicks you out during a demo
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  if (isLoading) return <div style={{ background: "#F5F5DC", minHeight: "100vh", padding: "40px", color: "#333" }}>Loading...</div>;
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
+  const isDemoLoggedIn = localStorage.getItem("hackathon_demo_auth") === "true";
+
+  if (isLoading && !isDemoLoggedIn) {
+    return <div style={{ background: "#F5F5DC", minHeight: "100vh", padding: "40px", color: "#333", textAlign: "center", fontSize: "20px" }}>Loading Dashboard...</div>;
+  }
+  
+  return (isAuthenticated || isDemoLoggedIn) ? <>{children}</> : <Navigate to="/" />;
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { signOut } = useAuthActions();
+  
+  const handleSignOut = () => {
+    // Clear our bypass flag when you actually want to log out
+    localStorage.removeItem("hackathon_demo_auth");
+    void signOut();
+    window.location.href = "/";
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "#F5F5DC", color: "#333", fontFamily: "sans-serif" }}>
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 40px", background: "white", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
@@ -82,7 +96,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <Link to="/projects" style={{ color: "#3498db", textDecoration: "none", fontWeight: "bold" }}>ACTIVE PROJECTS</Link>
           <Link to="/about" style={{ color: "#3498db", textDecoration: "none", fontWeight: "bold" }}>About Us</Link>
         </div>
-        <button onClick={() => void signOut()} style={{ background: "#e74c3c", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Sign Out</button>
+        <button onClick={handleSignOut} style={{ background: "#e74c3c", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Sign Out</button>
       </nav>
       <div style={{ padding: "40px" }}>{children}</div>
     </div>
