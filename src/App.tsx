@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -8,15 +8,23 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 const LoginPage = () => {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth(); // Pulling the live auth state
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // This useEffect watches the authentication state. 
+  // The moment Convex confirms login is successful, it navigates to /create.
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/create");
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleAuth = async (flow: "signIn" | "signUp") => {
     try {
       await signIn("password", { email, password, flow });
-      // Redirects to /create after a successful login
-      navigate("/create");
+      // We removed the manual navigate() from here to avoid the race condition!
     } catch (error) {
       console.error("Auth failed:", error);
       alert("Authentication failed. Please check your details.");
