@@ -8,23 +8,18 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 const LoginPage = () => {
   const { signIn } = useAuthActions();
-  const { isAuthenticated } = useConvexAuth(); // Pulling the live auth state
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // This useEffect watches the authentication state. 
-  // The moment Convex confirms login is successful, it navigates to /create.
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/create");
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleAuth = async (flow: "signIn" | "signUp") => {
     try {
       await signIn("password", { email, password, flow });
-      // We removed the manual navigate() from here to avoid the race condition!
+      
+      // 🚀 THE HACKATHON FIX: Force a hard browser navigation.
+      // This bypasses the React state delay and forces the 
+      // ProtectedRoute to read the freshly minted session token.
+      window.location.href = "/create";
+      
     } catch (error) {
       console.error("Auth failed:", error);
       alert("Authentication failed. Please check your details.");
