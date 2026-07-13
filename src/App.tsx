@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -8,26 +8,30 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 const LoginPage = () => {
   const { signIn } = useAuthActions();
-  const { isAuthenticated } = useConvexAuth(); // Monitor the live auth state
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // 🚀 THE FIX: This waits for the token to be securely saved, 
-  // then smoothly transitions you to the dashboard without a page reload.
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/create");
-    }
-  }, [isAuthenticated, navigate]);
+  const [status, setStatus] = useState(""); // Adds visual feedback
 
   const handleAuth = async (flow: "signIn" | "signUp") => {
     try {
+      setStatus("Authenticating...");
+      
+      // 1. Send credentials to Convex
       await signIn("password", { email, password, flow });
-      // Removed the hard-redirect! We let the useEffect safely handle it.
-    } catch (error) {
+      
+      setStatus("Success! Loading Dashboard...");
+      
+      // 2. THE HACKATHON HAMMER:
+      // Wait exactly 1 second for the token to securely save to the browser's storage,
+      // then force a hard navigation directly to the dashboard.
+      setTimeout(() => {
+        window.location.href = "/create";
+      }, 1000);
+      
+    } catch (error: any) {
+      setStatus("");
       console.error("Auth failed:", error);
-      alert("Authentication failed. Please check your details.");
+      alert("Authentication failed. Check console for details.");
     }
   };
 
@@ -46,12 +50,15 @@ const LoginPage = () => {
           type="password" 
           placeholder="Password" 
           onChange={(e) => setPassword(e.target.value)} 
-          style={{ display: "block", marginBottom: "30px", padding: "15px", borderRadius: "8px", width: "100%", boxSizing: "border-box", color: "black", border: "1px solid #ccc", fontSize: "16px" }} 
+          style={{ display: "block", marginBottom: "20px", padding: "15px", borderRadius: "8px", width: "100%", boxSizing: "border-box", color: "black", border: "1px solid #ccc", fontSize: "16px" }} 
         />
         
+        {/* Shows you exactly what is happening in real-time */}
+        {status && <p style={{ color: "#27ae60", fontWeight: "bold", marginBottom: "15px" }}>{status}</p>}
+
         <div style={{ display: "flex", gap: "15px" }}>
-          <button onClick={() => handleAuth("signIn")} style={{ flex: 1, padding: "15px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>Login</button>
-          <button onClick={() => handleAuth("signUp")} style={{ flex: 1, padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>Sign Up</button>
+          <button onClick={() => handleAuth("signIn")} disabled={!!status} style={{ flex: 1, padding: "15px", background: status ? "#bdc3c7" : "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>Login</button>
+          <button onClick={() => handleAuth("signUp")} disabled={!!status} style={{ flex: 1, padding: "15px", background: status ? "#bdc3c7" : "#2ecc71", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>Sign Up</button>
         </div>
       </div>
     </div>
